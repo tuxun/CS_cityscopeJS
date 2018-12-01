@@ -1,29 +1,118 @@
 import { keystoneMouse, keystoneKeys } from "./UI/KeyStoneUI";
 import { MatrixTransform, scanArrayMaker } from "./CV/MatrixTransform";
 import "./Storage";
+const myConfig=require('./Config.js');
+
+async function ifServerTableExist(inputTableName) 
+{
+    let MITcityIOurl = myConfig.serverUrl() + "api/tables/list";
+    const tables = await getCityIO(MITcityIOurl);
+    var ret = false;
+    let tableArray = [];
+    for (let i = 0; i < tables.length; i++) 
+    {
+        let thisTable = await getCityIO(tables[i]);
+        //check id API v2 [to replace with proper check later]
+        thisTable = thisTable.header;
+        tableArray.push({
+            url : tables[i], name : thisTable.name 
+        });
+        if (thisTable.name.toString() .toLowerCase() === inputTableName) {
+            ret = true;
+        }
+    }
+    return new Promise(function (resolve, reject) 
+    {
+        if (ret) {
+            //rejectsettings();
+            reject('doublon');
+        }
+        else {
+            resolve('pas de doublon');
+            //acceptsettings();
+        }
+    });
+}
+async function getCityIO(cityIOurl) 
+{
+    // GET method
+    return $.ajax( {
+        url : cityIOurl, dataType : "JSON", callback : "jsonData", type : "GET",
+        success : function (d) 
+        {
+            return d;
+        },
+        // or error
+        error : function (e) 
+        {
+            console.log("GET error: " + e.status.toString());
+            // infoDiv("GET error: " + e.status.toString());
+        }
+    });
+}
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //save/load local storage
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///JSON load function
-export function onFileLoad(loadEvent) {
-  // updateInfoDIV( ("Trying to Load Setting JSON file...");
-  var file = loadEvent.target.files[0];
-  var reader = new FileReader();
-  let res = reader.readAsText(file);
-  reader.onload = function(e) {
-    res = e.target.result;
-
-    //store cityIOdataStruct in Storage
-    var cityIOdataStruct = JSON.parse(res);
-    //save settings file data into a local Storage location
-    saveSettings("CityScopeJS_cityIOdataStruct", cityIOdataStruct);
-    Storage.cityIOdataStruct = cityIOdataStruct;
-    updateInfoDIV("loaded settings [JSON]...", cityIOdataStruct);
-
-    initSequence();
-  };
+export function onFileLoad(loadEvent) 
+{
+    // updateInfoDIV( ("Trying to Load Setting JSON file...");
+    var file = loadEvent.target.files[0];
+    var reader = new FileReader();
+    let res = reader.readAsText(file);
+    reader.onload = function (e) 
+    {
+        res = e.target.result;
+        //store cityIOdataStruct in Storage
+        var cityIOdataStruct = JSON.parse(res);
+        // convert table name to lower text
+        cityIOdataStruct.header.name = cityIOdataStruct.header.name .toString() .toLowerCase();
+        let usingCityIOServer = false;
+        if (myConfig.serverUrl().indexOf('cityio.media.mit.edu') !== - 1) {
+            usingCityIOServer = true;
+        };
+        ifServerTableExist(cityIOdataStruct.header.name).then(function (value) 
+        {
+            // console.log( "rejected promise");
+            console.log(value);
+            saveSettings("CityScopeJS_cityIOdataStruct", cityIOdataStruct);
+            Storage.cityIOdataStruct = cityIOdataStruct;
+            updateInfoDIV("loaded settings [JSON]...", cityIOdataStruct);
+            initSequence();
+        },
+        function (value) 
+        {
+            console.log('gotcha');
+            console.log(value);
+            if (confirm("Overwrite an existing table?")) 
+            {
+                if (usingCityIOServer) 
+                {
+                    if (confirm("Are you sure?\nYou're using MIT CityIO SERVER!")) 
+                    {
+                        saveSettings("CityScopeJS_cityIOdataStruct", cityIOdataStruct);
+                        Storage.cityIOdataStruct = cityIOdataStruct;
+                        updateInfoDIV("loaded settings [JSON]...", cityIOdataStruct);
+                        initSequence();
+                        console.log('overwriting and ok with it');
+                    }
+                    else {
+                        console.log("no overwrite" );
+                    }
+                }
+            }
+            else {
+                console.log("no overwrite" );
+            }
+        });
+    };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
