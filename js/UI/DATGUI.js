@@ -1,9 +1,8 @@
 import * as dat from "dat.gui";
-import { cityIOinit, cityIOstop } from "../CITYIO/cityio";
-import { onFileLoad, updateInfoDIV } from "../Modules";
+import { onFileLoad, updateInfoDIV, cityIOinit, cityIOstop } from "../Modules";
 import { renderGrid } from "./RenderGrid";
 import "../Storage";
-
+const myConfig=require('../Config.js');
 /**
  * makes datGUI interface
  * @param {void}
@@ -25,13 +24,13 @@ export function datGUI() {
     sendRate: 1000,
     //test on cityIO
     fe: function() {
-      window.open("https://cityio.media.mit.edu/", "_blank");
+      window.open(myConfig.serverUrl(), "_blank");
     },
     rawCityIO: function() {
       var cityIOdataStruct = Storage.cityIOdataStruct;
 
       window.open(
-        "https://cityio.media.mit.edu/api/table/" +
+        myConfig.serverUrl() +
           cityIOdataStruct.header.name,
         "_blank"
       );
